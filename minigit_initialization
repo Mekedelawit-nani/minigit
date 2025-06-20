@@ -1,0 +1,30 @@
+#include <iostream>
+#include <filesystem>
+#include <fstream>
+
+using namespace std;
+namespace fs = std::filesystem;
+
+void init(){
+ fs::path rDirec = ".mingit";
+ if (fs::exists(rDirec)) {
+        std::cout << "MiniGit repository already exists.\n";
+        return;
+    }
+    fs::create_directory(rDirec);
+    fs::create_directory(rDirec / "objects");
+    fs::create_directory(rDirec / "refs");
+    
+ std::ofstream headFile(rDirec / "HEAD");
+
+ if (headFile.is_open()) {
+        headFile << "ref: refs/master";
+        headFile.close();
+    }
+std::cout << "Initialized empty MiniGit repository in " << fs::absolute(rDirec) << "\n";
+}
+
+int main(){
+   init();
+   return 0;
+}
