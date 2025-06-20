@@ -1,18 +1,19 @@
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <ctime>
-#include <map>
-#include <vector>
-#include <set>
-#include <filesystem>
+#include <fstream> //for reading or writing the file
+#include <sstream>  //for string manipulation
+#include <ctime>  //for time management
+#include <map> //to store filename-hash pairs
+#include <vector> //for 
+#include <set>  //for unique file names wile using merge
+#include <filesystem>  //for directory and file
 
-namespace fs = std::filesystem;
+namespace fs = std::filesystem;      //shorter alias instead of writing std::filesystem everytime. for easiness
 
 // hash function 
 std::string simpleHash(const std::string& content) {
     std::hash<std::string> hasher;
-    return std::to_string(hasher(content));
+    return std::to_string(hasher(content));    
+    //creates hash for files
 }
 
 // initialization
@@ -31,6 +32,7 @@ void init() {
     std::ofstream masterRef(repoDir / "refs/master");
     masterRef.close();
     std::cout << "Initialized empty MiniGit repository in " << fs::absolute(repoDir) << "\n";
+    //creates a folder ".minigit"
 }
 
 // add files
@@ -41,12 +43,12 @@ void add(const std::string& filename) {
     }
     std::ifstream inFile(filename);
     std::stringstream buffer;
-    buffer << inFile.rdbuf();
+    buffer << inFile.rdbuf();  //read content inside file
     std::string content = buffer.str();
     inFile.close();
-    std::string hash = simpleHash(content);
+    std::string hash = simpleHash(content); //get hash
     fs::path blobPath = ".minigit/objects/" + hash;
-    if (!fs::exists(blobPath)) {
+    if (!fs::exists(blobPath)) {  //save content if new
         std::ofstream blobFile(blobPath);
         blobFile << content;
         blobFile.close();
@@ -54,7 +56,7 @@ void add(const std::string& filename) {
     std::ofstream index(".minigit/index", std::ios::app);
     index << filename << " " << hash << "\n";
     index.close();
-    std::cout << "Staged " << filename << " with hash " << hash << "\n";
+    std::cout << "Staged " << filename << " with hash " << hash << "\n"; //stage file
 }
 
 // commit
@@ -77,7 +79,7 @@ void commit(const std::string& message) {
     std::string refLine;
     std::getline(headFile, refLine);
     headFile.close();
-    std::string refPath = refLine.substr(5);
+    std::string refPath = refLine.substr(5);  //get branch file
     std::string parentHash;
     std::ifstream parentFile(".minigit/" + refPath);
     std::getline(parentFile, parentHash);
@@ -99,6 +101,7 @@ void commit(const std::string& message) {
     refOut.close();
     std::remove(".minigit/index");
     std::cout << "Committed changes with hash: " << commitHash << "\n";
+    //takes all stage files and saves a commit
 }
 
 // view log
@@ -123,6 +126,7 @@ void log() {
         std::cout << "Commit: " << commitHash << "\n" << timestamp << "\n" << message << "\n" << parent << "\n\n";
         commitHash = (parent.substr(0, 8) == "Parent: ") ? parent.substr(8) : "";
     }
+    //walkis from head to parent commits
 }
 
 // branching
@@ -140,6 +144,7 @@ void branch(const std::string& branchName) {
     newBranch << currentCommit;
     newBranch.close();
     std::cout << "Created branch: " << branchName << "\n";
+    //creates a branch by pointing to the current commit
 }
 
 // checkout
@@ -182,6 +187,7 @@ void checkout(const std::string& target) {
     }
     commitFile.close();
     std::cout << "Checked out: " << target << "\n";
+    //switches to another commit and restores comtents in the file
 }
 
 // merge
@@ -198,6 +204,7 @@ void merge(const std::string& branchName) {
     if (!otherRefFile.is_open()) {
         std::cout << "Branch not found: " << branchName << "\n";
         return;
+        //grabs current commits of the brnanches
     }
     std::getline(otherRefFile, otherCommitHash);
     otherRefFile.close();
@@ -207,6 +214,8 @@ void merge(const std::string& branchName) {
     std::getline(commitFile1, line);
     std::getline(commitFile1, line);
     std::getline(commitFile1, line);
+
+    //for current commit
     while (std::getline(commitFile1, line)) {
         std::istringstream iss(line);
         std::string filename, hash;
@@ -218,6 +227,7 @@ void merge(const std::string& branchName) {
     std::getline(commitFile2, line);
     std::getline(commitFile2, line);
     std::getline(commitFile2, line);
+    //repeat for other file
     while (std::getline(commitFile2, line)) {
         std::istringstream iss(line);
         std::string filename, hash;
@@ -226,6 +236,7 @@ void merge(const std::string& branchName) {
     }
     commitFile2.close();
     std::ofstream index(".minigit/index");
+    //combining file names
     std::set<std::string> allFiles;
     for (const auto& [f, _] : currentFiles) allFiles.insert(f);
     for (const auto& [f, _] : otherFiles) allFiles.insert(f);
@@ -243,6 +254,7 @@ void merge(const std::string& branchName) {
     }
     index.close();
     commit("Merged branch " + branchName);
+    //compares commits of current and target branches
 }
 
 // diff viewer(optional bonus)
@@ -265,12 +277,14 @@ void diff(const std::string& hash1, const std::string& hash2) {
         std::cout << "Line " << lineNum++ << "\n- " << line1 << "\n";
     while (std::getline(f2, line2))
         std::cout << "Line " << lineNum++ << "\n+ " << line2 << "\n";
+    //shows difference between two blobs
 }
 
 //main
 int main() {
     std::string command;
     std::cout << "Enter command (init, add <filename>, commit -m <message>, log, branch <name>, checkout <name|hash>, merge <branch>, diff <hash1> <hash2>): ";
+    //tskrd input from user
     std::cin >> command;
     if (command == "init") init();
     else if (command == "add") {
@@ -302,6 +316,7 @@ int main() {
         diff(h1, h2);
     } else std::cout << "Unknown command.\n";
     return 0;
+    //calles the appropriate functions
 }
 
 
